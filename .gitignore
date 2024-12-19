@@ -1,9 +1,10 @@
 .idea/
 .vscode/
 *.iml
-.env
+.envпше
 .DS_Store
 venv/
+.venv/
 .pytest_cache/
 **__pycache__/
 *.pyc
