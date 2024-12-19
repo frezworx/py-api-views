@@ -1,3 +1,4 @@
+from django.http import Http404
 from rest_framework.mixins import (
     ListModelMixin,
     CreateModelMixin,
@@ -6,7 +7,8 @@ from rest_framework.mixins import (
     DestroyModelMixin,
 )
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, RetrieveAPIView, \
+    UpdateAPIView, CreateAPIView, DestroyAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
@@ -20,7 +22,7 @@ from cinema.serializers import (
 )
 
 
-class GenreAPIView(APIView):
+class GenreList(APIView):
     def get(self, request):
         genres = Genre.objects.all()
         serializer = GenreSerializer(genres, many=True)
@@ -34,26 +36,27 @@ class GenreAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class GenreDetail(APIView):
+    def get_object(self, pk):
+        try:
+            return Genre.objects.get(pk=pk)
+        except Genre.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        genre = self.get_object(pk)
+        serializer = GenreSerializer(genre)
+        return Response(serializer.data)
+
+
 class ActorDetail(
-    GenericAPIView,
-    RetrieveModelMixin,
-    UpdateModelMixin,
-    DestroyModelMixin,
+    CreateAPIView,
+    DestroyAPIView,
+    UpdateAPIView,
+    RetrieveAPIView,
 ):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-
-    def get(self, request, *args, **kwargs):
-        return self.retrieve(request, *args, **kwargs)
-
-    def put(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-
-    def patch(self, request, *args, **kwargs):
-        return self.partial_update(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
 
 
 class ActorList(
@@ -68,6 +71,8 @@ class ActorList(
     serializer_class = ActorSerializer
 
     def get(self, request, *args, **kwargs):
+        if "pk" in kwargs:
+            return self.retrieve(request, *args, **kwargs)
         return self.list(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
